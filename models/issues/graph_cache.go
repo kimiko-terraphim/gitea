@@ -5,6 +5,7 @@ package issues
 
 import (
 	"context"
+	"sort"
 	"time"
 
 	"code.gitea.io/gitea/models/db"
@@ -247,21 +248,17 @@ func GetRankedIssues(ctx context.Context, repoID int64, limit int) ([]*Issue, er
 
 // sortByPageRank sorts issues by PageRank in descending order
 func sortByPageRank(issues []*Issue, pageRanks map[int64]float64, baseline float64) {
-	for i := 0; i < len(issues)-1; i++ {
-		for j := i + 1; j < len(issues); j++ {
-			rankI := pageRanks[issues[i].ID]
-			if rankI == 0 {
-				rankI = baseline
-			}
-			rankJ := pageRanks[issues[j].ID]
-			if rankJ == 0 {
-				rankJ = baseline
-			}
-			if rankI < rankJ {
-				issues[i], issues[j] = issues[j], issues[i]
-			}
+	sort.Slice(issues, func(i, j int) bool {
+		rankI := pageRanks[issues[i].ID]
+		if rankI == 0 {
+			rankI = baseline
 		}
-	}
+		rankJ := pageRanks[issues[j].ID]
+		if rankJ == 0 {
+			rankJ = baseline
+		}
+		return rankI > rankJ // descending order
+	})
 }
 
 // InvalidateCache clears PageRank cache for a repository
